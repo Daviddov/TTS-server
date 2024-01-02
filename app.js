@@ -7,7 +7,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const apiKey = process.env.OPENAI_API_KEY;
-const port =  process.env.PORT || 3000; // You can choose any available port
+const port =  process.env.PORT || "http://localhost:3001"; // You can choose any available port
 
 
 app.use(cors());
