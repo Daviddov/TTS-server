@@ -4,9 +4,11 @@ const openai = require('openai'); // Use the OpenAI npm package
 const app = express();
 const axios = require('axios');
 const cors = require('cors');
+require('dotenv').config();
 
+const apiKey = process.env.OPENAI_API_KEY;
 const port =  process.env.PORT || 3000; // You can choose any available port
-const apiKey ="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";
+
 
 app.use(cors());
 app.use(bodyParser.json());
