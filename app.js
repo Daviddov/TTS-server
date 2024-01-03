@@ -14,7 +14,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.post('/api/sendToChatGPT', async (req, res) => {
   try {
-    const { transcription } = req.body;
+    const { transcription, voiceName, userName } = req.body;
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
     const response = await axios.post(
@@ -24,15 +24,14 @@ app.post('/api/sendToChatGPT', async (req, res) => {
         messages: [
             {
                 role: 'system',
-                content: `enswer in 3 parts with sepatere pip I want you to act as a spoken English teacher and improver. 
-                you will reply to me in English to practice my spoken English correct me Strictly.
-                limiting the reply to 40 words. ask me a question in your reply. 
-                you could ask me a question first.
-                 after "|" Offer me a sentence to answer you.
-                after "|" enswer If there are grammatical errors in my sentence, correct me Strictly else answer "correct".
-                remamber to enswer in 3 parts`,
+                content: `"Your name is ${voiceName}. Respond in two parts with separate pipes.
+                Act as a spoken English teacher. if my sentence is not correct, correcting me strictly  Correct me accurately within 50 words.
+                if is correct just answer.
+                Begin with a question. Feel free to initiate with a question first. 
+                After '|', provide a sentence for me to respond to.
+                Remember to structure your response in two parts."`,
               },
-              { role: 'user', content: transcription },
+              { role: 'user', content:`My name is ${userName} ${transcription}` },
         ],
         temperature: 0.7,
         max_tokens: 250,
