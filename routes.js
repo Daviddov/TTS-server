@@ -1,6 +1,6 @@
 const axios = require('axios');
-const apiKey = process.env.OPENAI_API_KEY;
-
+const apiKey = "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";
+console.log(apiKey);
 async function sendToChatGPT(req, res) {
   try {
     const { transcription, history, voiceName, userName } = req.body;
@@ -11,19 +11,17 @@ async function sendToChatGPT(req, res) {
       {
         model: 'gpt-3.5-turbo-1106',
         messages: [
-            {
-                role: 'system',
-                content: `" Your name is ${voiceName}. Respond in two parts with separate pipes.
-                Act as a spoken English teacher. if my sentence is not correct, correcting me strictly  Correct me accurately within 50 words.
-                if is correct just answer.
-                Begin with a question. Feel free to initiate with a question first. 
-                After '|', provide a sentence for me to respond to.
-                Remember to structure your response in two parts. just in case the username is ${userName}"`,
-              },
-              { role: 'assistant', content: `${history}` },
-              { role: 'user', content:` ${transcription}` },
-
-
+          {
+            role: 'system',
+            content: `Your name is ${voiceName}. Respond in two parts with separate pipes.
+              Act as a spoken English teacher. If my sentence is not correct, correct me strictly. Correct me accurately within 50 words.
+              If it is correct, just answer.
+              Begin with a question. Feel free to initiate with a question first. 
+              After '|', provide a sentence for me to respond to.
+              Remember to structure your response in two parts. Just in case the username is ${userName}`,
+          },
+          { role: 'assistant', content: `${history}` },
+          { role: 'user', content: ` ${transcription}` },
         ],
         temperature: 0.7,
         max_tokens: 250,
@@ -33,20 +31,25 @@ async function sendToChatGPT(req, res) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
+
       }
     );
 
+    // Call streamAudio function
     const chatGPTResponse = response.data.choices[0].message.content;
-    res.json({ chatGPTResponse });
+    
+    const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName });
+
+    // Return both ChatGPT response and audio response
+    res.json({ chatGPTResponse, blobResponse });
   } catch (error) {
-    console.error('Error sending transcription to ChatGPT:', error.response ? error.response.data : error.message);
+    console.error('Error sending transcription to ChatGPT:', error);
     res.status(500).json({ error: 'An error occurred. Please try again.' });
   }
 }
 
-async function streamAudio(req, res) {
+async function streamAudio({ input, voice }) {
   try {
-    const { input, voice } = req.body;
     const apiUrl = 'https://api.openai.com/v1/audio/speech';
 
     const response = await axios.post(apiUrl, {
@@ -62,10 +65,10 @@ async function streamAudio(req, res) {
     });
 
     const blob = await response.data;
-    res.send(blob);
+    return blob;
   } catch (error) {
-    console.error('Error streaming audio:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'An error occurred. Please try again.' });
+    console.error('Error streaming audio:', error);
+    throw new Error('An error occurred while streaming audio.');
   }
 }
 
