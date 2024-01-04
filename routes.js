@@ -1,6 +1,6 @@
 const axios = require('axios');
 const apiKey = "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";
-console.log(apiKey);
+
 async function sendToChatGPT(req, res) {
   try {
     const { transcription, history, voiceName, userName } = req.body;
@@ -37,8 +37,8 @@ async function sendToChatGPT(req, res) {
 
     // Call streamAudio function
     const chatGPTResponse = response.data.choices[0].message.content;
-    
-    const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName });
+    const firstPart = chatGPTResponse.split('|')[0];
+    const blobResponse = await streamAudio({ input: firstPart, voice: voiceName });
 
     // Return both ChatGPT response and audio response
     res.json({ chatGPTResponse, blobResponse });
