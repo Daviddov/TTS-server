@@ -1,6 +1,7 @@
 const axios = require('axios');
-const apiKey = "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";
-console.log(apiKey);
+require('dotenv').config();
+const apiKey = process.env.OPENAI_API_KEY;
+
 async function sendToChatGPT(req, res) {
   try {
     const { transcription, history, voiceName, userName } = req.body;
@@ -13,12 +14,12 @@ async function sendToChatGPT(req, res) {
         messages: [
           {
             role: 'system',
-            content: `Your name is ${voiceName}. Respond in two parts with separate pipes.
-              Act as a spoken English teacher. If my sentence is not correct, correct me strictly. Correct me accurately within 50 words.
-              If it is correct, just answer.
-              Begin with a question. Feel free to initiate with a question first. 
-              After '|', provide a sentence for me to respond to.
-              Remember to structure your response in two parts. Just in case the username is ${userName}`,
+            content: `Your name is ${voiceName}. Respond in two parts with  pipe that separate.
+            Act as a spoken English teacher. If my sentence is not correct, tell me strictly. Correct me accurately within 50 words.
+            Feel free to initiate with a question first. 
+            provide a sentence for me to respond to, After '|'.
+            Just in case the username is ${userName}
+            Remember to structure your response in two parts like this "enswer |suggestion".`,
           },
           { role: 'assistant', content: `${history}` },
           { role: 'user', content: ` ${transcription}` },
@@ -37,8 +38,8 @@ async function sendToChatGPT(req, res) {
 
     // Call streamAudio function
     const chatGPTResponse = response.data.choices[0].message.content;
-    
-    const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName });
+    const firstPart = chatGPTResponse.split('|')[0];
+    const blobResponse = await streamAudio({ input: firstPart, voice: voiceName });
 
     // Return both ChatGPT response and audio response
     res.json({ chatGPTResponse, blobResponse });
