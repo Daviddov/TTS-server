@@ -28,7 +28,9 @@ async function sendToChatGPTAndAudio(req, res) {
     const chatGPTResponse = await sendToChatGPT(parametersInitial, apiKey);
 
     // Call streamAudio function
+
     const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName ,apiKey});
+
 
     // Return both ChatGPT response and audio response
     res.json({ chatGPTResponse, blobResponse });
