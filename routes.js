@@ -1,13 +1,17 @@
-const axios = require('axios');
 require('dotenv').config();
+const { streamAudio } = require('./streamAudio');
+const { sendToChatGPT } = require('./sendToChatGPT');
+
 const apiKey = process.env.OPENAI_API_KEY;
 
 async function sendToChatGPTAndAudio(req, res) {
   try {
     const { transcription, history, voiceName, userName } = req.body;
-    const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-    const systemMessage = `Your name is ${voiceName}. Act as a spoken English teacher. If my sentence is not correct, Correct me accurately within max 50 words. Feel free to initiate with a question first. Just for the case, the username is ${userName}`;
+    const systemMessage = `Your name is ${voiceName}. Act as a spoken English teacher. 
+    If my sentence is not correct, 
+    Correct me within max 50 words. Feel free to initiate with a question first. 
+    Just for the case, the username is ${userName}`;
 
     const parametersInitial = {
       model: 'gpt-3.5-turbo-1106',
@@ -21,80 +25,46 @@ async function sendToChatGPTAndAudio(req, res) {
     };
 
     // Call sendToChatGPT function for initial chat completion
-    const chatGPTResponse = await sendToChatGPT(parametersInitial);
-
-    const parametersSuggestion = {
-      model: 'gpt-3.5-turbo-1106',
-      messages: [
-        { role: 'system', content: 'provide a sentence to respond to' },
-        { role: 'user', content: ` ${chatGPTResponse}` },
-      ],
-      temperature: 0.7,
-      max_tokens: 50,
-    };
-
-    // Call sendToChatGPT function for suggestion
-    const chatGPTSuggestion = await sendToChatGPT(parametersSuggestion);
+    const chatGPTResponse = await sendToChatGPT(parametersInitial, apiKey);
 
     // Call streamAudio function
-    const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName });
+    const blobResponse = await streamAudio({ input: chatGPTResponse, voice: voiceName ,apiKey});
 
     // Return both ChatGPT response and audio response
-    res.json({ chatGPTResponse, blobResponse, chatGPTSuggestion });
+    res.json({ chatGPTResponse, blobResponse });
   } catch (error) {
     console.error('Error sending transcription to ChatGPT and streaming audio:', error);
     res.status(500).json({ error: 'An error occurred. Please try again.' });
   }
 }
 
-async function sendToChatGPT(parameters) {
+async function chatGPTSuggestion(req, res) {
   try {
-    const apiUrl = 'https://api.openai.com/v1/chat/completions';
+    const { transcription } = req.body;
+    const systemMessage = `give a Suggestion sentence to continue the conversation for me`;
+    const parametersInitial = {
+      model: 'gpt-3.5-turbo-1106',
+      messages: [
+        { role: 'system', content: systemMessage },
+        { role: 'user', content: ` ${transcription}` },
+      ],
+      temperature: 0.7,
+      max_tokens: 100,
+    };
 
-    const response = await axios.post(apiUrl, parameters, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
+    // Call sendToChatGPT function for initial chat completion
+    const chatGPTResponse = await sendToChatGPT(parametersInitial, apiKey);
 
-    return response.data.choices[0].message.content;
+
+    // Return both ChatGPT response and audio response
+    res.json({ chatGPTResponse });
   } catch (error) {
-    console.error('Error sending transcription to ChatGPT:', error);
-    throw new Error('An error occurred while sending transcription to ChatGPT.');
-  }
-}
-
-async function streamAudio({ input, voice }) {
-  try {
-    const apiUrl = 'https://api.openai.com/v1/audio/speech';
-
-    const response = await axios.post(
-      apiUrl,
-      {
-        model: 'tts-1',
-        voice,
-        input,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        responseType: 'arraybuffer',
-      }
-    );
-
-    const blob = await response.data;
-    return blob;
-  } catch (error) {
-    console.error('Error streaming audio:', error);
-    throw new Error('An error occurred while streaming audio.');
+    console.error('Error sending transcription to ChatGPT and streaming audio:', error);
+    res.status(500).json({ error: 'An error occurred. Please try again.' });
   }
 }
 
 module.exports = {
   sendToChatGPTAndAudio,
-  sendToChatGPT,
-  streamAudio,
+  chatGPTSuggestion,
 };
